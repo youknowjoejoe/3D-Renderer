@@ -23,7 +23,7 @@ public class Mesh<T> {
 			rvs.add(vertexShader.apply(vertices.get(rep)).homogenous());
 		}
 		List<ResultingTriangle<T>> list = new ArrayList<ResultingTriangle<T>>(); 
-		for(int rep = 0; rep < indices.length; rep+=3){
+		for(int rep = 0; rep+2 < indices.length; rep+=3){
 			list.add(new ResultingTriangle<T>(
 					rvs.get(rep),
 					rvs.get(rep+1),

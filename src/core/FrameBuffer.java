@@ -15,11 +15,12 @@ public class FrameBuffer<T> {
 	
 	private FrameBufferAdder<T> adder;
 	
-	public FrameBuffer(T[][] array){
+	public FrameBuffer(T[][] array,FrameBufferAdder<T> adder){
 		fragments = array;
+		this.adder = adder;
 		width = array.length;
 		height = array[0].length;
-		screenSpace = Matrix.getScale(new Vec4(width,-height,1,1)).times(Matrix.getTranslation(new Vec4(1,1,0,0)));
+		screenSpace = Matrix.getScale(new Vec4(width/2.0f,-height/2.0f,1,1)).times(Matrix.getTranslation(new Vec4(1,-1,0,0)));
 	}
 	
 	public int getWidth(){
@@ -43,16 +44,18 @@ public class FrameBuffer<T> {
 	
 	public <A> void rasterize(ResultingTriangle<A> t, Shader<VertexAttribute<A>,T> fragmentShader){
 		t.transform(screenSpace);
-		
 		int minX = (int)Math.min(Math.min(t.getA1().getPos().x(), t.getA2().getPos().x()), t.getA3().getPos().x());
 		int minY = (int)Math.min(Math.min(t.getA1().getPos().y(), t.getA2().getPos().y()), t.getA3().getPos().y());
 		int maxX = (int)Math.max(Math.max(t.getA1().getPos().x(), t.getA2().getPos().x()), t.getA3().getPos().x());
 		int maxY = (int)Math.max(Math.max(t.getA1().getPos().y(), t.getA2().getPos().y()), t.getA3().getPos().y());
 		
-		for(int x = minX; x < maxX; x++){
-			for(int y = minY; y < maxY; y++){
+		for(int x = Math.max(minX,0); x < Math.min(width-1,maxX); x++){
+			for(int y = Math.max(minY,0); y < Math.min(height-1,maxY); y++){
 				if(t.contains(new Vec4(x,y,0,0))){
-					addFragment(x,y,fragmentShader.apply(t.getA1())); //add interpolation
+				    float depth = t.getDepth((new Vec4(x,y,0,0)));
+				    System.out.println(depth);
+				    VertexAttribute<A> va = new VertexAttribute<A>( new Vec4(0,0,depth,1), t.getA1().getAttributes());
+					addFragment(x,y,fragmentShader.apply(va));
 				}
 			}
 		}

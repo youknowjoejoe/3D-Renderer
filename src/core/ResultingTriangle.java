@@ -40,4 +40,21 @@ public class ResultingTriangle<T> {
 		float cross3 = a12d.minus(a32d).cross2D(v.minus(a32d));
 		return (cross1>0 && cross2 > 0 && cross3 > 0) || (cross1<0 && cross2 < 0 && cross3 < 0);
 	}
+	
+	public float getDepth(Vec4 v){
+	    Vec4 va1 = new Vec4(a1.getPos().x()-v.x(),a1.getPos().y()-v.y(),0,0);
+	    Vec4 va2 = new Vec4(a2.getPos().x()-v.x(),a2.getPos().y()-v.y(),0,0);
+	    Vec4 va3 = new Vec4(a3.getPos().x()-v.x(),a3.getPos().y()-v.y(),0,0);
+	    
+	    float w1 = Math.abs(va2.cross2D(va3)/2.0f);
+	    float w2 = Math.abs(va3.cross2D(va1)/2.0f);
+	    float w3 = Math.abs(va1.cross2D(va2)/2.0f);
+	    
+	    float total = w1+w2+w3;
+	    w1/=total;
+	    w2/=total;
+	    w3/=total;
+	    
+	    return 1.0f/Interpolator.floatI.interpolate(a1.getPos().z(),a2.getPos().z(),a3.getPos().z(),w1,w2,w3);
+	}
 }
