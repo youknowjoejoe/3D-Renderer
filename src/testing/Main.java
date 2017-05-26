@@ -13,15 +13,13 @@ import core.FrameBufferAdder;
 import core.Interpolator;
 import math.Vec4;
 import math.Matrix;
+import util.Display;
 import util.ImageExporter;
 
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
-
-//things to check if working:
-//matrix v matrix, matrix scale v vector, cross product, magnitude
 
 public class Main {
     
@@ -89,6 +87,9 @@ public class Main {
         colorBuffer.rasterize(m,fs);
         
         BufferedImage img = ImageExporter.convert(colorBuffer);
-        ImageIO.write(img,"png",new File("dog.png"));
+        Display d = new Display(1000,1000);
+        while(true){
+        	d.draw(img);
+        }
     }
 }
