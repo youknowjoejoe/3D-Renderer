@@ -7,20 +7,36 @@ import math.Vec4;
 
 public class FrameBuffer<T> {
 	
+	private static final RasterizeAction defaultAction = new RasterizeAction(){
+		@Override
+		public <T, A> void fragment(int x, int y, VertexAttribute<A> va, FrameBuffer<T> fb,
+				Shader<VertexAttribute<A>, T> fragmentShader){
+			fb.addFragment(x,y,fragmentShader.apply(va));
+		}
+	};
+	
 	private T[][] fragments;
 	
 	private int width;
 	private int height;
 	private Matrix screenSpace;
+	private Matrix inverseScreenSpace;
 	
 	private FrameBufferAdder<T> adder;
+	private RasterizeAction ra;
 	
 	public FrameBuffer(T[][] array,FrameBufferAdder<T> adder){
+		this(array,adder,defaultAction);
+	}
+	
+	public FrameBuffer(T[][] array,FrameBufferAdder<T> adder, RasterizeAction ra){
 		fragments = array;
 		this.adder = adder;
 		width = array.length;
 		height = array[0].length;
 		screenSpace = Matrix.getScale(new Vec4(width/2.0f,-height/2.0f,1,1)).times(Matrix.getTranslation(new Vec4(1,-1,0,0)));
+		inverseScreenSpace = screenSpace.getInverseMatrix();
+		this.ra = ra;
 	}
 	
 	public int getWidth(){
@@ -42,8 +58,8 @@ public class FrameBuffer<T> {
 		}
 	}
 	
-	public <A> void rasterize(ResultingTriangle<A> t, Shader<VertexAttribute<A>,T> fragmentShader){
-		t.transform(screenSpace);
+	public <A> void rasterize(ResultingTriangle<A> input, Shader<VertexAttribute<A>,T> fragmentShader){
+		ResultingTriangle<A> t = input.transform(screenSpace);
 		int minX = (int)Math.min(Math.min(t.getA1().getPos().x(), t.getA2().getPos().x()), t.getA3().getPos().x());
 		int minY = (int)Math.min(Math.min(t.getA1().getPos().y(), t.getA2().getPos().y()), t.getA3().getPos().y());
 		int maxX = (int)Math.max(Math.max(t.getA1().getPos().x(), t.getA2().getPos().x()), t.getA3().getPos().x());
@@ -52,10 +68,11 @@ public class FrameBuffer<T> {
 		for(int x = Math.max(minX,0); x < Math.min(width-1,maxX); x++){
 			for(int y = Math.max(minY,0); y < Math.min(height-1,maxY); y++){
 				if(t.contains(new Vec4(x,y,0,0))){
-				    float depth = t.getDepth((new Vec4(x,y,0,0)));
-				    System.out.println(depth);
-				    VertexAttribute<A> va = new VertexAttribute<A>( new Vec4(0,0,depth,1), t.getA1().getAttributes());
-					addFragment(x,y,fragmentShader.apply(va));
+					Vec4 fragPos = inverseScreenSpace.times(new Vec4(x,y,0,1));
+				    float depth = input.getDepth(fragPos);
+				    fragPos = new Vec4(fragPos.x(),fragPos.y(),depth,1);
+				    VertexAttribute<A> va = new VertexAttribute<A>(fragPos, input.getA1().getAttributes());
+				    ra.fragment(x, y, va, this, fragmentShader);
 				}
 			}
 		}
@@ -63,5 +80,13 @@ public class FrameBuffer<T> {
 	
 	public void addFragment(int x, int y, T value){
 		fragments[x][y] = adder.add(fragments[x][y], value);
+	}
+	
+	public void setRasterizeAction(RasterizeAction ra){
+		this.ra = ra;
+	}
+	
+	public Matrix getScreenSpaceTransformation(){
+		return screenSpace;
 	}
 }

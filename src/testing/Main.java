@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
+import core.DepthTestRasterizeAction;
 import core.FrameBuffer;
 import core.Shader;
 import core.VertexAttribute;
@@ -38,11 +39,25 @@ public class Main {
                 fragments[x][y] = Color.black;
             }
         }
-        FrameBuffer<Color> frame = new FrameBuffer<Color>(fragments,adder);
+        FrameBuffer<Color> colorBuffer = new FrameBuffer<Color>(fragments,adder);
+        DepthTestRasterizeAction depthTest = new DepthTestRasterizeAction(colorBuffer);
+        colorBuffer.setRasterizeAction(depthTest);
+        
+        FrameBuffer<Float> depth = depthTest.getDepthBuffer();
+        
+        /*for(int x = 0; x < depth.getWidth(); x++){
+            for(int y = 0; y < depth.getHeight(); y++){
+                depth.addFragment(x, y, 2f);
+            }
+        }*/
         
         List<VertexAttribute<Color>> vertices = new ArrayList<VertexAttribute<Color>>();
-        vertices.add(new VertexAttribute<Color>(new Vec4(-0.5f,-0.5f,2,1), Color.RED));
+        vertices.add(new VertexAttribute<Color>(new Vec4(-0.5f,-0.5f,3,1), Color.RED));
         vertices.add(new VertexAttribute<Color>(new Vec4(0.5f,-0.5f,1,1), Color.RED));
+        vertices.add(new VertexAttribute<Color>(new Vec4(0f,0.5f,1,1), Color.RED));
+        
+        vertices.add(new VertexAttribute<Color>(new Vec4(-0.5f,-0.5f,1,1), Color.RED));
+        vertices.add(new VertexAttribute<Color>(new Vec4(0.5f,-0.5f,3,1), Color.RED));
         vertices.add(new VertexAttribute<Color>(new Vec4(0f,0.5f,1,1), Color.RED));
         
         Shader<VertexAttribute<Color>,VertexAttribute<Color>> vs = new Shader<VertexAttribute<Color>,VertexAttribute<Color>>(){
@@ -65,15 +80,15 @@ public class Main {
         Shader<VertexAttribute<Color>,Color> fs = new Shader<VertexAttribute<Color>,Color>(){
             @Override
             public Color apply(VertexAttribute<Color> attributes) {
-                return new Color(Math.min(1,attributes.getPos().z()/2.0f),0,0);
+                return new Color(1.0f-Math.min(1,attributes.getPos().z()/5.0f),(1f+attributes.getPos().x())/2.0f,(1f+attributes.getPos().y())/2.0f);
             }
         };
         
-        Mesh<Color> m = new Mesh<Color>(vertices,new int[]{0,1,2},vs,Interpolator.colorI);
+        Mesh<Color> m = new Mesh<Color>(vertices,new int[]{0,1,2,3,4,5},vs,Interpolator.colorI);
         
-        frame.rasterize(m,fs);
+        colorBuffer.rasterize(m,fs);
         
-        BufferedImage img = ImageExporter.convert(frame);
+        BufferedImage img = ImageExporter.convert(colorBuffer);
         ImageIO.write(img,"png",new File("dog.png"));
     }
 }

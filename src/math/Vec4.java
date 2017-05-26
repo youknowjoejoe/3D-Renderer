@@ -3,6 +3,8 @@ package math;
 public class Vec4 {
 	private float[] values;
 	
+	public static final float epsilon = (float) 2e-6;
+	
 	public Vec4(float x, float y, float z, float w){
 		values = new float[]{x,y,z,w};
 	}

@@ -25,10 +25,12 @@ public class ResultingTriangle<T> {
 		return a3;
 	}
 	
-	public void transform(Matrix m){
-		a1 = new VertexAttribute<T>(m.times(a1.getPos()),a1.getAttributes());
-		a2 = new VertexAttribute<T>(m.times(a2.getPos()),a2.getAttributes());
-		a3 = new VertexAttribute<T>(m.times(a3.getPos()),a3.getAttributes());
+	public ResultingTriangle<T> transform(Matrix m){
+		return new ResultingTriangle<T>(
+				new VertexAttribute<T>(m.times(a1.getPos()),a1.getAttributes()),
+				new VertexAttribute<T>(m.times(a2.getPos()),a2.getAttributes()),
+				new VertexAttribute<T>(m.times(a3.getPos()),a3.getAttributes())
+				);
 	}
 	
 	public boolean contains(Vec4 v){
