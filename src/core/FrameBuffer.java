@@ -13,9 +13,14 @@ public class FrameBuffer<T> {
 				Shader<VertexAttribute<A>, T> fragmentShader){
 			fb.addFragment(x,y,fragmentShader.apply(va));
 		}
+		
+		public void reset(){
+		    //hi
+		}
 	};
 	
 	private T[][] fragments;
+	private T clearValue;
 	
 	private int width;
 	private int height;
@@ -25,11 +30,11 @@ public class FrameBuffer<T> {
 	private FrameBufferAdder<T> adder;
 	private RasterizeAction ra;
 	
-	public FrameBuffer(T[][] array,FrameBufferAdder<T> adder){
-		this(array,adder,defaultAction);
+	public FrameBuffer(T[][] array,FrameBufferAdder<T> adder, T clearValue){
+		this(array,adder,defaultAction,clearValue);
 	}
 	
-	public FrameBuffer(T[][] array,FrameBufferAdder<T> adder, RasterizeAction ra){
+	public FrameBuffer(T[][] array,FrameBufferAdder<T> adder, RasterizeAction ra, T clearValue){
 		fragments = array;
 		this.adder = adder;
 		width = array.length;
@@ -37,6 +42,9 @@ public class FrameBuffer<T> {
 		screenSpace = Matrix.getScale(new Vec4(width/2.0f,-height/2.0f,1,1)).times(Matrix.getTranslation(new Vec4(1,-1,0,0)));
 		inverseScreenSpace = screenSpace.getInverseMatrix();
 		this.ra = ra;
+		this.clearValue = clearValue;
+		this.clear();
+		this.ra.reset();
 	}
 	
 	public int getWidth(){
@@ -68,9 +76,9 @@ public class FrameBuffer<T> {
 		for(int x = Math.max(minX,0); x < Math.min(width-1,maxX); x++){
 			for(int y = Math.max(minY,0); y < Math.min(height-1,maxY); y++){
 				if(t.contains(new Vec4(x,y,0,0))){
-					Vec4 fragPos = inverseScreenSpace.times(new Vec4(x,y,0,1));
-				    float depth = input.getDepth(fragPos);
-				    fragPos = new Vec4(fragPos.x(),fragPos.y(),depth,1);
+					Vec4 fragPos = (new Vec4(x,y,0,1));
+				    float depth = t.getDepth(fragPos);
+				    fragPos = inverseScreenSpace.times(new Vec4(fragPos.x(),fragPos.y(),depth,1));
 				    VertexAttribute<A> va = new VertexAttribute<A>(fragPos, input.getA1().getAttributes());
 				    ra.fragment(x, y, va, this, fragmentShader);
 				}
@@ -80,6 +88,15 @@ public class FrameBuffer<T> {
 	
 	public void addFragment(int x, int y, T value){
 		fragments[x][y] = adder.add(fragments[x][y], value);
+	}
+	
+	public void clear(){
+	    for(int x = 0; x < width; x++){
+	        for(int y = 0; y < height; y++){
+	            fragments[x][y] = clearValue;
+	        }
+	    }
+	    ra.reset();
 	}
 	
 	public void setRasterizeAction(RasterizeAction ra){
